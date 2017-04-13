@@ -23,6 +23,7 @@ struct device devices[n];
 int scratch_num = 0;
 int device_num = 0;
 
+
 // 取得 sockaddr，IPv4 或 IPv6：
 void *get_in_addr(struct sockaddr *sa)
 {
@@ -47,9 +48,11 @@ int main(int argc, char *argv[])
 	fd_set readfds;
 	//1 extra for null character, string termination
 	char *buffer;
-	char *put;
+	char put[1024];
+	char now_ip[16];
+	char dev_ip[16];
 	buffer = (char*)malloc((MAXRECV + 1) * sizeof(char));
-	put = (char*)malloc((MAXRECV + 1) * sizeof(char));
+	
 
 	for (i = 0; i < 30; i++)
 	{
@@ -161,10 +164,9 @@ int main(int argc, char *argv[])
 					bool flag_recon = false;
 					int j = 0;
 					for (j; j < device_num; j++) {
-						printf("device ip  : %s ", inet_ntoa(devices[j].IP));
-						printf("address ip is : %s ", inet_ntoa(address.sin_addr));
-
-						if (strncmp(inet_ntoa(devices[j].IP), inet_ntoa(address.sin_addr),64) == 0)//0412 移到155前
+						strcpy_s(dev_ip,inet_ntoa(devices[j].IP));
+						strcpy_s(now_ip, inet_ntoa(address.sin_addr));
+						if (strcmp(dev_ip, now_ip) == 0)//0412 移到155前
 						{
 							puts("reconnected ID:");
 							printf("printf ID: %c", devices[j].ID);
@@ -186,6 +188,9 @@ int main(int argc, char *argv[])
 		}//if (FD_ISSET(master, &readfds))
 
 		//else its some IO operation on some other socket :)
+		//get details of the client
+		getpeername(s, (struct sockaddr*)&address, (int*)&addrlen);
+
 		for (i = 0; i < max_clients; i++)
 		{
 			s = client_socket[i];
@@ -244,7 +249,9 @@ int main(int argc, char *argv[])
 					//send(s, message, strlen(message), 0);
 					if (buffer[0] == 'X') {//scratch register 
 						for (int sj = 0; sj < device_num; sj++) {
-							if (inet_ntoa(devices[sj].IP) == inet_ntoa(address.sin_addr)) {
+							strcpy_s(dev_ip, inet_ntoa(devices[sj].IP));
+							strcpy_s(now_ip, inet_ntoa(address.sin_addr));
+							if (strcmp(dev_ip, now_ip) == 0){
 								scratch[scratch_num].ID = buffer[1];
 								scratch[scratch_num].the_s = i;
 								scratch_num++;
@@ -259,17 +266,19 @@ int main(int argc, char *argv[])
 							if (buffer[1] == devices[j].ID)//要將16轉成10再來比對
 							{
 								devices[j].action = buffer[2];
-								*put = devices[j].action;//將ACTION設給BUFFER
-								puts("act dev:");
+								put[1] = devices[j].action;//將ACTION設給BUFFER
 								s = client_socket[devices[j].the_s];
-								send(s, put, valread, 0);
-								//send(s, buffer, valread, 0);
+								if (send(s, put, valread, 0) != strlen(put)) {
+									perror("send fail");
+								}
 							}
 						}
 						break;
 					}
 					for (int j = 0; j < device_num; j++) {
-						if (inet_ntoa(devices[j].IP) == inet_ntoa(address.sin_addr)) //msg from client
+						strcpy_s(dev_ip, inet_ntoa(devices[j].IP));
+						strcpy_s(now_ip, inet_ntoa(address.sin_addr));
+						if (strcmp(dev_ip, now_ip) == 0) //msg from client
 						{
 							if (buffer[0] == 'S')//set ID
 							{
@@ -287,8 +296,8 @@ int main(int argc, char *argv[])
 									char *abc="server recved by abc";
 									send(s, abc, valread, 0);//send back s
 									printf("ID: %c , action= %c", devices[j].ID , devices[j].action);
-									*put =devices[j].ID;//char *message
-									(*put++)= devices[j].action;//
+									put[0] =devices[j].ID;//char *message
+									put[1] = devices[j].action;
 									for (int k = 0; k < scratch_num; k++) {
 										x=client_socket[scratch[k].the_s];//send to scratch
 										send(x, put, strlen(put), 0);
