@@ -48,9 +48,9 @@ int main(int argc, char *argv[])
 	fd_set readfds;
 	//1 extra for null character, string termination
 	char *buffer;
-	char put[1024];
-	char now_ip[16];
-	char dev_ip[16];
+	char put[1024]="";
+	char now_ip[16]="";
+	char dev_ip[16]="";
 	buffer = (char*)malloc((MAXRECV + 1) * sizeof(char));
 	
 
@@ -164,12 +164,10 @@ int main(int argc, char *argv[])
 					bool flag_recon = false;
 					int j = 0;
 					for (j; j < device_num; j++) {
-						strcpy_s(dev_ip,inet_ntoa(devices[j].IP));
-						strcpy_s(now_ip, inet_ntoa(address.sin_addr));
-						if (strcmp(dev_ip, now_ip) == 0)//0412 移到155前
+						//if (strcmp(dev_ip, now_ip) == 0)//0412 移到155前
+						if (devices[j].IP.S_un.S_addr == address.sin_addr.S_un.S_addr)
 						{
-							puts("reconnected ID:");
-							printf("printf ID: %c", devices[j].ID);
+							printf("reconnected ID: %c\n", devices[j].ID);
 
 							flag_recon = true;
 							break;
@@ -178,10 +176,9 @@ int main(int argc, char *argv[])
 					if (!flag_recon) {
 						devices[j].IP = address.sin_addr;//sarah 0404
 						device_num++;
+						printf("device count %d   ", device_num);
 					}
 					devices[j].the_s = i;//device connect to socket
-					printf("device count %d   ", device_num);
-					printf("device[j].IP:  %s\n", inet_ntoa(devices[j].IP));
 					break;
 				}
 			}
@@ -189,7 +186,7 @@ int main(int argc, char *argv[])
 
 		//else its some IO operation on some other socket :)
 		//get details of the client
-		getpeername(s, (struct sockaddr*)&address, (int*)&addrlen);
+		//getpeername(s, (struct sockaddr*)&address, (int*)&addrlen);
 
 		for (i = 0; i < max_clients; i++)
 		{
@@ -200,10 +197,11 @@ int main(int argc, char *argv[])
 				//get details of the client
 				getpeername(s, (struct sockaddr*)&address, (int*)&addrlen);
 
+			
 				//Check if it was for closing , and also read the incoming message
 				//recv does not place a null terminator at the end of the string (whilst printf %s assumes there is one).
 				valread = recv(s, buffer, MAXRECV, 0);
-
+				buffer[MAXRECV+1] = '\0';
 				if (valread == SOCKET_ERROR)
 				{
 					int error_code = WSAGetLastError();
@@ -242,16 +240,12 @@ int main(int argc, char *argv[])
 				else
 				{
 					//add null character, if you want to use with printf/puts or other string handling functions
-					buffer[valread] = '\0'; //convert to string noted by sarah
-					printf("%s:%d - %s \n", inet_ntoa(address.sin_addr), ntohs(address.sin_port), buffer);
-					//char *message = "1"; //"\n TCP SERVER received. \r\n";
-					//char *message = "what server received: ";
-					//send(s, message, strlen(message), 0);
+					buffer[valread] = '\0'; //convert to string noted by sarah delete 
+					printf("\n %s:%d - %s \n", inet_ntoa(address.sin_addr), ntohs(address.sin_port), buffer);
+
 					if (buffer[0] == 'X') {//scratch register 
 						for (int sj = 0; sj < device_num; sj++) {
-							strcpy_s(dev_ip, inet_ntoa(devices[sj].IP));
-							strcpy_s(now_ip, inet_ntoa(address.sin_addr));
-							if (strcmp(dev_ip, now_ip) == 0){
+							if (devices[sj].IP.S_un.S_addr == address.sin_addr.S_un.S_addr){
 								scratch[scratch_num].ID = buffer[1];
 								scratch[scratch_num].the_s = i;
 								scratch_num++;
@@ -262,31 +256,40 @@ int main(int argc, char *argv[])
 						}
 					}
 					else if (buffer[0] == 'W') {//id from scratch command
+						bool dev_exist = false;
 						for (int j = 0; j < device_num; j++) {
 							if (buffer[1] == devices[j].ID)//要將16轉成10再來比對
 							{
+								dev_exist = true;
 								devices[j].action = buffer[2];
-								put[1] = devices[j].action;//將ACTION設給BUFFER
+								put[0] = devices[j].action;//將ACTION設給BUFFER
 								s = client_socket[devices[j].the_s];
-								if (send(s, put, valread, 0) != strlen(put)) {
+								int sback=send(s, put, strlen(put), 0);
+								if (sback != strlen(put)) {
 									perror("send fail");
 								}
 							}
 						}
+						if (dev_exist == false) {
+							printf("the device doesn't exist.");
+						}
 						break;
 					}
 					for (int j = 0; j < device_num; j++) {
-						strcpy_s(dev_ip, inet_ntoa(devices[j].IP));
-						strcpy_s(now_ip, inet_ntoa(address.sin_addr));
-						if (strcmp(dev_ip, now_ip) == 0) //msg from client
+						if (devices[j].IP.S_un.S_addr == address.sin_addr.S_un.S_addr) //msg from client
 						{
 							if (buffer[0] == 'S')//set ID
 							{
-								devices[j].ID = buffer[1];
-								printf("the ID:");
-								//*put = buffer[1];
-								printf("%c",buffer[1]);//1.2....65.66...
+								char const* str1;
+								str1 = &(devices[j].ID);
+								if (strcmp(str1, "\0") == 0) {
+									devices[j].ID = buffer[1];
+									printf("the ID:");
+									//*put = buffer[1];
+									printf("%c", buffer[1]);//1.2....65.66...
+								}
 								break;
+								
 							}else {//report the action of itself send to scratch
 									devices[j].action = buffer[1];
 									*buffer = devices[j].action;
