@@ -257,11 +257,15 @@ int main(int argc, char *argv[])
 					}
 					else if (buffer[0] == 'W') {//id from scratch command
 						bool dev_exist = false;
+						char const *d_id;
+						buffer++;
 						for (int j = 0; j < device_num; j++) {
-							if (buffer[1] == devices[j].ID)//要將16轉成10再來比對
+							//if (buffer[1] == devices[j].ID)//要將16轉成10再來比對
+							d_id = &(devices[j].ID);
+							if(_strnicmp(buffer, d_id,1)==0)//buffer
 							{
 								dev_exist = true;
-								devices[j].action = buffer[2];
+								devices[j].action = buffer[1];
 								put[0] = devices[j].action;//將ACTION設給BUFFER
 								s = client_socket[devices[j].the_s];
 								int sback=send(s, put, strlen(put), 0);
