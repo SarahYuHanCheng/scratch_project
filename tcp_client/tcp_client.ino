@@ -12,11 +12,12 @@
 #define TCP_SERVER_IP   "192.168.1.205"
 #define TCP_SERVER_PORT 8888
 
-#define deviceID 'B'
+#define deviceID 12
+char _buffer[3];
 
 void setup()
 {
-  char _buffer[3];
+  
   int idflag =1;
   char joinedSSID[32];
 
@@ -45,14 +46,14 @@ void setup()
   }
 
   Serial.print("OK\nJoining to the TCP server... ");
+  
   if (wifi.beginClient("TCP", TCP_SERVER_IP, TCP_SERVER_PORT) != CONNECT_ERROR)
     {
       delay(500);
       _buffer[0]='S';
-      _buffer[1]=deviceID;
+      String(deviceID, HEX).toCharArray((_buffer+1), 2);
       wifi.puts(_buffer);
       Serial.println("sended id OK");
-      
     }
   else {
     // Cannot join to the TCP server, stop.
@@ -63,39 +64,40 @@ void setup()
 }
 
 static char buffer[32];
-
+static unsigned long timerCheckUpdate = millis();
 void loop()
 {
- 
   int charAvail;
- 
-
-  if ((charAvail = Serial.available()) > 0) {
-     Serial.println("recev serial");
-     Serial.println(charAvail);
-    for (int i = 0; i < charAvail; ++i)
-      buffer[i] = Serial.read();
-    //buffer[charAvail] = '\0';
-    wifi.puts(buffer);
-  }
-
+  
   // gets() would return the ID of the sender.
   if ((charAvail=wifi.gets(buffer, 8)) >= 0) {
-    Serial.println("recev wifi");
-    Serial.println(charAvail);
-      Serial.println(buffer);
-      if(buffer[0]==1){digitalWrite(13,HIGH);}
-      else if(buffer[0]==0){digitalWrite(13,LOW);}
+      if(buffer[0]=='1'){ digitalWrite(13,HIGH);
+      Serial.println(buffer[0]);}
+      else if(buffer[0]=='0'){digitalWrite(13,LOW);}
       
       for(int i=1;i<sizeof(buffer);i++){ buffer[i]={0}; }
-//      if (strcmp(buffer, "end") == 0) {
-//      Serial.println("Quit from the TCP server.");
-//      wifi.endClient();
-//      for(int i=1;i<sizeof(buffer);i++){ buffer[i]={0}; }
-//      while (1)
-//        ;
-//    }
-    delay(1000);
+  }
+  
+
+  if (millis()-timerCheckUpdate>=10000)
+  {
+        if(!wifi.isClientConnected()){
+          if (wifi.beginClient("TCP", TCP_SERVER_IP, TCP_SERVER_PORT) != CONNECT_ERROR)
+          {
+            _buffer[0]='S';
+             String(deviceID, HEX).toCharArray((_buffer+1), 2);
+            wifi.puts(_buffer);
+          }
+        else {
+          // Cannot join to the TCP server, stop.
+          Serial.println("Fail");
+          while (1)
+            ;
+        }
+      }else { 
+        //Serial.println("is connected");
+        }
+    timerCheckUpdate=millis();
   }
 }
 
