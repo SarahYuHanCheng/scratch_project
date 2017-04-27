@@ -1,13 +1,20 @@
 #include <SoftwareSerial.h>
-SoftwareSerial wifitoserver(3, 2); 
+SoftwareSerial wifitoserver(51,50); 
+//SoftwareSerial wifireset(53,52); //交由wifi模組自動判斷
 bool flag=true;
 String deviceID;
 int _ID[4];
 char device_ctr;
 int index_pin=0;
 static int char_count = 0;
-int a=20;
+char mssg[10];
+char *p_msg;
+char cat[10];
 
+unsigned long _msg;//=strtoul(mssg[0], NULL, 16);
+int cc=1;//16
+int dd=1;
+bool flag_wifi=true;
 typedef enum { 
   input, servomotor, pwm, digital } 
 pinType;
@@ -26,28 +33,65 @@ void setup()
 {
   Serial.begin(38400);
   Serial.flush();
-  wifitoserver.begin(9600);
+   wifitoserver.begin(9600);
   wifitoserver.flush();
+  Serial2.begin(9600);
+  Serial2.flush();
   configurePins();
   resetPins();
- 
 }
 static char buffer[5];
+//bool ff=true;
 void loop()
 {
+//  if(ff){
+//    analogWrite(0,11);
+//    ff=false;
+//    delay(5000);
+//    }
 //  return;
   static unsigned long timerCheckUpdate = millis();
-
+ 
   if (millis()-timerCheckUpdate>=20)
   {
     sendUpdateServomotors();
     sendSensorValues();
     timerCheckUpdate=millis();
+    recvwifi();
   }
 
   readSerialPort();
 }
+ 
+void recvwifi(){
+  if((char_count = wifitoserver.available()) > 0){ //recv msg from server
+        for (int i = 0; i < char_count; ++i){
+         cat[i]=wifitoserver.read();//char mssg[]
+//          p_msg=mssg[i];
+////          cat[i]=mssg[i];//failed cat[i]get 0 char *cat[]
+//          Serial2.println(mssg);
+        if(i==0){cc=strtoul(cat,NULL, 16);}//ID
+          }
+        //char *ptr[]={cat};
+        //char **cptr=ptr;
+        //cc=strtoul(cat,cptr, 16);//wrong
+        dd=strtoul((cat+1), NULL, 16);//action
+        for(int i=1;i<sizeof(cat);i++){ cat[i]={0}; }
+        
 
+  }
+//  else{
+//        if(!checkconnect())//origin if(!flag_wifi) 0427
+//         {   
+//            pinMode(52,OUTPUT);
+//            digitalWrite(52,LOW);//reset WIFI
+//            delay(200);
+//            pinMode(52,INPUT);
+//            //flag_wifi=true;
+////            delay(500);
+//          }
+//      }
+  }
 void configurePins()
 {
   arduinoPins[0].type=input;
@@ -71,7 +115,7 @@ void resetPins() {
   {
     if (arduinoPins[index].type!=input)
     {
-      pinMode(index, OUTPUT);
+      pinMode(index, OUTPUT);//?
       if (arduinoPins[index].type==servomotor)
       {
         arduinoPins[index].state = 255;
@@ -90,23 +134,12 @@ void sendSensorValues()
 {
   unsigned int sensorValues[6], readings[5];
   byte sensorIndex;
-  
-//   if ((char_count = wifitoserver.available()) > 0) {
-//      int i;
-//  
-//        for (i = 0; i < 4; ++i)
-//            buffer[i] = wifitoserver.read();
-//        buffer[i] = '\0';
 
-    sensorValues[0]=a;//sarah
-    //Serial2.print(buffer[2]);
-    //Serial2.flush();
-    //for(int i=1;i<sizeof(buffer);i++){ buffer[i]={0}; } //sarah
-    
-//    delay(100);
-//    b_flag=0;
+  sensorValues[0]=cc;//ID sarah
+  sensorValues[1]=dd;//action sarah
+
   //}
-  for (sensorIndex =1; sensorIndex < 6; sensorIndex++) //for analog sensors, calculate the median of 5 sensor readings in order to avoid variability and power surges
+  for (sensorIndex =2; sensorIndex < 6; sensorIndex++) //for analog sensors, calculate the median of 5 sensor readings in order to avoid variability and power surges
   {
     for (byte p = 0; p < 5; p++)
       readings[p] = analogRead(sensorIndex);
@@ -252,22 +285,15 @@ void pulse (byte pinNumber, unsigned int pulseWidth)
   digitalWrite(pinNumber, LOW);
 }
 
-void checkScratchDisconnection() //the reset is necessary when using an wireless arduino board (because we need to ensure that arduino isn't waiting the actuators state from Scratch) or when scratch isn't sending information (because is how serial port close is detected)
+void checkScratchDisconnection() 
+//the reset is necessary when using an wireless arduino board 
+//(because we need to ensure that arduino isn't waiting 
+//the actuators state from Scratch) or when scratch isn't sending information 
+//(because is how serial port close is detected)
 {
   if (millis() - lastDataReceivedTime > 1000) reset(); //reset state if actuators reception timeout = one second
 }
-void recv_show(char dev_Id[]){
-  //Ascii convert to binaray 
-  //char *show = dev_Id;
-  //unsigned long show_id=strtoul(show,NULL,16);
-  //char show_id[5];
-  //String(dev_Id, BIN).toCharArray(show_id,5);
-//  for(int i=4;i<8;i++){
-//    if(){}
-    //analogWrite(0,);
-    
-//    }
-  }
+
 void device_control (int _ID[], char turn)//Sarah 001
 { 
   char msg[5];
@@ -285,6 +311,7 @@ void device_control (int _ID[], char turn)//Sarah 001
     String(_msglong, HEX).toCharArray(msg,10);
     msg[1]= turn;
     wifitoserver.print(msg);
+//    wifi.puts(msg);
 }
 
 
