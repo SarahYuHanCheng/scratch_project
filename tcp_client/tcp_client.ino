@@ -12,14 +12,19 @@ WiFiClient wifiClient;
 #define TCP_IP "192.168.1.205"
 #define TCP_PORT 8888
 
-#define deviceID 12
-int ledpin =D5;
+#define deviceID 12 
+int in_msg =D0;
+int wifi_connect=D5;
+int out_msg =D2;
 char _buffer[3];
 
 void setup()
 {
-   pinMode(ledpin, OUTPUT);
-   pinMode(2, OUTPUT);
+   pinMode(in_msg, OUTPUT);
+   pinMode(wifi_connect, OUTPUT);
+   
+   
+   pinMode(out_msg, INPUT_PULLUP);
   int idflag =1;
   char joinedSSID[32];
 
@@ -40,6 +45,7 @@ void setup()
      _buffer[0]='S';
       String(deviceID, HEX).toCharArray((_buffer+1), 2);
       wifiClient.write(_buffer,2);
+      for(int i=1;i<sizeof(_buffer);i++){ _buffer[i]={0}; }
      Serial.println("sended id");
   
 }
@@ -49,13 +55,22 @@ static unsigned long timerCheckUpdate = millis();
 void loop()
 {
   int charAvail;
-  
+  int temp=digitalRead(out_msg);
+  Serial.println(temp);
+  if(!temp){
+    delay(1000);
+    String(deviceID, HEX).toCharArray((_buffer), 2);
+    _buffer[1]='1';
+    wifiClient.write(_buffer,2);
+    for(int i=1;i<sizeof(_buffer);i++){ _buffer[i]={0}; }   
+    
+    }
   // gets() would return the ID of the sender.
   if ((charAvail = wifiClient.available()) >0) {
     wifiClient.read((unsigned char *)buffer, 32);
-      if(buffer[0]=='1'){ digitalWrite(2,HIGH);//BUILTIN_LED off
+      if(buffer[0]=='1'){ digitalWrite(in_msg,HIGH);//BUILTIN_LED off
       Serial.println(buffer[0]);}
-      else if(buffer[0]=='0'){digitalWrite(2,LOW);}//BUILTIN_LED on
+      else if(buffer[0]=='0'){digitalWrite(in_msg,LOW);}//BUILTIN_LED on
       
       for(int i=1;i<sizeof(buffer);i++){ buffer[i]={0}; }
   }
@@ -68,9 +83,9 @@ void loop()
               Serial.println("connection failed");
                int i=0;
                while(i<2){
-                 digitalWrite(ledpin,HIGH);
+                 digitalWrite(wifi_connect,HIGH);
                  delay(800);
-                 digitalWrite(ledpin,LOW);
+                 digitalWrite(wifi_connect,LOW);
                  delay(200);
                  i++;
                }
@@ -79,6 +94,7 @@ void loop()
              _buffer[0]='S';
               String(deviceID, HEX).toCharArray((_buffer+1), 2);
               wifiClient.write(_buffer,2);
+              for(int i=1;i<sizeof(_buffer);i++){ _buffer[i]={0}; }
              Serial.println("sended id again");
             }
         }
