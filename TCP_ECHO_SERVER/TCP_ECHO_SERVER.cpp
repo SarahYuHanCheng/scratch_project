@@ -168,7 +168,9 @@ int main(int argc, char *argv[])
 						if (devices[j].IP.S_un.S_addr == address.sin_addr.S_un.S_addr)
 						{
 							printf("reconnected ID: %c\n", devices[j].ID);
-
+							int dcs=devices[j].the_s;
+							client_socket[dcs] = 0;
+							client_num--;
 							flag_recon = true;
 							break;
 						}
@@ -201,7 +203,7 @@ int main(int argc, char *argv[])
 				//Check if it was for closing , and also read the incoming message
 				//recv does not place a null terminator at the end of the string (whilst printf %s assumes there is one).
 				valread = recv(s, buffer, MAXRECV, 0);
-				buffer[MAXRECV+1] = '\0';
+				buffer[MAXRECV] = '\0';
 				if (valread == SOCKET_ERROR)
 				{
 					int error_code = WSAGetLastError();
@@ -245,7 +247,7 @@ int main(int argc, char *argv[])
 
 					if (buffer[0] == 'X') {//scratch register 
 						for (int sj = 0; sj < device_num; sj++) {
-							if (devices[sj].IP.S_un.S_addr == address.sin_addr.S_un.S_addr){
+							if (devices[sj].IP.S_un.S_addr == address.sin_addr.S_un.S_addr) {
 								scratch[scratch_num].ID = buffer[1];
 								scratch[scratch_num].the_s = i;
 								scratch_num++;
@@ -262,13 +264,13 @@ int main(int argc, char *argv[])
 						for (int j = 0; j < device_num; j++) {
 							//if (buffer[1] == devices[j].ID)//要將16轉成10再來比對
 							d_id = &(devices[j].ID);
-							if(_strnicmp(buffer, d_id,1)==0)//buffer
+							if (_strnicmp(buffer, d_id, 1) == 0)//buffer
 							{
 								dev_exist = true;
 								devices[j].action = buffer[1];
 								put[0] = devices[j].action;//將ACTION設給BUFFER
 								s = client_socket[devices[j].the_s];
-								int sback=send(s, put, strlen(put), 0);
+								int sback = send(s, put, strlen(put), 0);
 								if (sback != strlen(put)) {
 									perror("send fail");
 								}
@@ -279,42 +281,38 @@ int main(int argc, char *argv[])
 						}
 						break;
 					}
-					for (int j = 0; j < device_num; j++) {
-						if (devices[j].IP.S_un.S_addr == address.sin_addr.S_un.S_addr) //msg from client
-						{
-							if (buffer[0] == 'S')//set ID
+					else {
+						for (int j = 0; j < device_num; j++) {
+							if (devices[j].IP.S_un.S_addr == address.sin_addr.S_un.S_addr) //msg from client
 							{
-								char const* str1;
-								str1 = &(devices[j].ID);
-								if (strcmp(str1, "\0") == 0) {
-									devices[j].ID = buffer[1];
-									printf("the ID:");
-									//*put = buffer[1];
-									printf("%c", buffer[1]);//1.2....65.66...
+								if (buffer[0] == 'S')//set ID
+								{
+									char const* str1;
+									str1 = &(devices[j].ID);
+									if (strcmp(str1, "\0") == 0) {
+										devices[j].ID = buffer[1];
+										printf("the ID:");
+										//*put = buffer[1];
+										printf("%c", buffer[1]);//1.2....65.66...
+									}
+									break;
+
 								}
-								break;
-								
-							}else {//report the action of itself send to scratch
+								else {//report the action of itself send to scratch
 									devices[j].action = buffer[1];
-									*buffer = devices[j].action;
-									send(s, buffer, valread, 0);
-									buffer = "server recved";
-									send(s, buffer, valread, 0);
-									char *abc="server recved by abc";
-									send(s, abc, valread, 0);//send back s
-									printf("ID: %c , action= %c", devices[j].ID , devices[j].action);
-									put[0] =devices[j].ID;//char *message
+									printf("ID: %c , action= %c", devices[j].ID, devices[j].action);
+									put[0] = devices[j].ID;//char *message
 									put[1] = devices[j].action;
 									for (int k = 0; k < scratch_num; k++) {
-										x=client_socket[scratch[k].the_s];//send to scratch
+										x = client_socket[scratch[k].the_s];//send to scratch
 										send(x, put, strlen(put), 0);
 									}
-									
-									}
+								}
 								//}
 							}
-						
-					}// for device
+
+						}// for device				
+					}
 				}
 			}//if(FD_ISET)
 		}
