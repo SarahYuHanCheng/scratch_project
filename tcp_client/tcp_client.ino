@@ -52,13 +52,14 @@ void setup()
 
 static char buffer[32];
 static unsigned long timerCheckUpdate = millis();
+static unsigned long timer ;
 void loop()
 {
   int charAvail;
   int temp=digitalRead(out_msg);
-  Serial.println(temp);
-  if(!temp){
-    delay(1000);
+  delay(200);//0.2 sec
+  int temp2=digitalRead(out_msg);
+  if(!temp && (temp!=temp2)){
     String(deviceID, HEX).toCharArray((_buffer), 2);
     _buffer[1]='1';
     wifiClient.write(_buffer,2);
