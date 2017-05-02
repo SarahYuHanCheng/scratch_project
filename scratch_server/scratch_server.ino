@@ -1,9 +1,9 @@
 #include <SoftwareSerial.h>
-SoftwareSerial wifitoserver(51,50); 
+SoftwareSerial wifitoserver(3,2); 
 //SoftwareSerial wifireset(53,52); //交由wifi模組自動判斷
 bool flag=true;
 String deviceID;
-int _ID[4];
+int _ID[0];
 char device_ctr;
 int index_pin=0;
 static int char_count = 0;
@@ -35,8 +35,8 @@ void setup()
   Serial.flush();
    wifitoserver.begin(9600);
   wifitoserver.flush();
-  Serial2.begin(9600);
-  Serial2.flush();
+ // Serial2.begin(9600);
+  //Serial2.flush();
   configurePins();
   resetPins();
 }
@@ -159,7 +159,7 @@ void swap(unsigned int* array, unsigned int a, unsigned int b)
 void ScratchBoardSensorReport(byte sensor, int value) //PicoBoard protocol, 2 bytes per sensor
 {
   Serial.write( B10000000
-    | ((sensor & B1111)<<3)
+    | ((sensor & B1111)<<3)//
     | ((value>>7) & B111));
   Serial.write( value & B1111111);
 }
@@ -195,8 +195,9 @@ void readSerialPort()
             if(flag==false)
               {
                 deviceID="";
-                for(int i=0; i<4;i++)
-                  _ID[i]=0;
+//                for(int i=0; i<4;i++)
+//                  _ID[i]=0;
+                    _ID[0]=0;
               }
               
               flag=true;
@@ -206,12 +207,12 @@ void readSerialPort()
             device_ctr='1'; //on
             if(flag)
               {
-                 for(int i=0; i<4;i++)   
-                   {   index_pin=i+10;             
-                     _ID[i]= arduinoPins[index_pin].state;
-                   }
-                device_control (_ID,device_ctr);
-                flag=false;
+                if(arduinoPins[6].state < 99){
+                      //希望可以在scratch上顯示錯誤字串
+                      _ID[0]= arduinoPins[6].state;
+                      device_control (_ID,device_ctr);
+                      flag=false;
+                  }
               }
             }
      if(pin==9 && newVal ==100) //sarah 0317
@@ -219,13 +220,11 @@ void readSerialPort()
           device_ctr='0'; //off
           if(flag)
               {
-                
-                for(int i=0; i<4;i++)   
-                     { index_pin=i+10;             
-                       _ID[i]= arduinoPins[index_pin].state;
-                     }
+                if(arduinoPins[6].state < 99){
+                _ID[0]= arduinoPins[6].state;
                 device_control (_ID,device_ctr);
                 flag=false;
+                  }
               }
           }
       if(arduinoPins[pin].state != newVal)
@@ -284,21 +283,16 @@ void device_control (int _ID[], char turn)//Sarah 001
 { 
   char msg[5];
   char *p=msg;
-  for(int i=0; i<4;i++)
-   { deviceID += _ID[i];
-//      buffer[i] =_ID[i];
-   }
+   deviceID += _ID[0];
    deviceID.toCharArray(msg,10);
-   unsigned long _msglong=strtoul(p, NULL, 2);
+   unsigned long _msglong=strtoul(msg, NULL, 10);
    for(int i=1;i<sizeof(msg);i++)
     {
       msg[i]={0};
       }
-    String(_msglong, HEX).toCharArray(msg,10);
-    msg[1]= turn;
+  String(_msglong, DEC).toCharArray(msg,10);
+  msg[2]= turn;
     wifitoserver.print(msg);
-    Serial2.println(msg);
-//    wifi.puts(msg);
 }
 
 
