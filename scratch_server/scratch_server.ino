@@ -12,8 +12,8 @@ char *p_msg;
 char cat[10];
 
 unsigned long _msg;//=strtoul(mssg[0], NULL, 16);
-int cc=1;//16
-int dd=1;
+int cc=0;//16
+int dd=0;
 bool flag_wifi=true;
 typedef enum { 
   input, servomotor, pwm, digital } 
@@ -44,12 +44,7 @@ static char buffer[5];
 //bool ff=true;
 void loop()
 {
-//  if(ff){
-//    analogWrite(0,11);
-//    ff=false;
-//    delay(5000);
-//    }
-//  return;
+
   static unsigned long timerCheckUpdate = millis();
  
   if (millis()-timerCheckUpdate>=20)
@@ -77,20 +72,11 @@ void recvwifi(){
         //cc=strtoul(cat,cptr, 16);//wrong
         dd=strtoul((cat+1), NULL, 16);//action
         for(int i=1;i<sizeof(cat);i++){ cat[i]={0}; }
-        
-
-  }
-//  else{
-//        if(!checkconnect())//origin if(!flag_wifi) 0427
-//         {   
-//            pinMode(52,OUTPUT);
-//            digitalWrite(52,LOW);//reset WIFI
-//            delay(200);
-//            pinMode(52,INPUT);
-//            //flag_wifi=true;
-////            delay(500);
-//          }
-//      }
+       }
+      else{
+        cc=0;
+        dd=0;
+        }
   }
 void configurePins()
 {
@@ -311,6 +297,7 @@ void device_control (int _ID[], char turn)//Sarah 001
     String(_msglong, HEX).toCharArray(msg,10);
     msg[1]= turn;
     wifitoserver.print(msg);
+    Serial2.println(msg);
 //    wifi.puts(msg);
 }
 
