@@ -11,12 +11,12 @@ WiFiClient wifiClient;
 #define PASSWD "s741852scream"
 #define TCP_IP "192.168.1.205"
 #define TCP_PORT 8888
+static String deviceID="08";
 
-#define deviceID 12 
 int in_msg =D0;
 int wifi_connect=D5;
 int out_msg =D2;
-char _buffer[3];
+char _buffer[4];
 
 void setup()
 {
@@ -43,8 +43,8 @@ void setup()
     Serial.println("Connected to AP");
      wifiClient.connect(TCP_IP, TCP_PORT);
      _buffer[0]='S';
-      String(deviceID, HEX).toCharArray((_buffer+1), 2);
-      wifiClient.write(_buffer,2);
+      deviceID.toCharArray((_buffer+1), 3);
+       wifiClient.write(_buffer,3);
       for(int i=1;i<sizeof(_buffer);i++){ _buffer[i]={0}; }
      Serial.println("sended id");
   
@@ -57,12 +57,16 @@ void loop()
 {
   int charAvail;
   int temp=digitalRead(out_msg);
-  delay(200);//0.2 sec
+  delay(200);//0.5 sec
   int temp2=digitalRead(out_msg);
   if(!temp && (temp!=temp2)){
-    String(deviceID, HEX).toCharArray((_buffer), 2);
-    _buffer[1]='1';
-    wifiClient.write(_buffer,2);
+    deviceID.toCharArray((_buffer), 3);
+    _buffer[2]='1';
+     Serial.print("deviceID:");
+      Serial.println(deviceID);
+     Serial.print("_buffer:");
+      Serial.println(_buffer);
+    wifiClient.write(_buffer,3);
     for(int i=1;i<sizeof(_buffer);i++){ _buffer[i]={0}; }   
     
     }
@@ -93,8 +97,8 @@ void loop()
               //return; 
             }else{
              _buffer[0]='S';
-              String(deviceID, HEX).toCharArray((_buffer+1), 2);
-              wifiClient.write(_buffer,2);
+              deviceID.toCharArray((_buffer+1), 3);
+      wifiClient.write(_buffer,3);
               for(int i=1;i<sizeof(_buffer);i++){ _buffer[i]={0}; }
              Serial.println("sended id again");
             }
