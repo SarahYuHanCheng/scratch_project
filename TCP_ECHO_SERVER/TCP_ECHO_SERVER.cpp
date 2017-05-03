@@ -9,10 +9,11 @@ Live Server on port 8888
 
 #pragma comment(lib, "ws2_32.lib") //Winsock Library
 
-#define n 16
+#define n 24
 //sarah 0322 begin
 typedef struct device {
-	char ID; //0~15 device; 254 register ;253 hostID
+	//char ID; //0~15 device; 254 register ;253 hostID
+	char ID[3];
 	IN_ADDR IP;
 	char action;//on/off/status
 	int the_s;
@@ -48,7 +49,7 @@ int main(int argc, char *argv[])
 	fd_set readfds;
 	//1 extra for null character, string termination
 	char *buffer;
-	char put[1024]="";
+	char put[8]="";
 	char now_ip[16]="";
 	char dev_ip[16]="";
 	buffer = (char*)malloc((MAXRECV + 1) * sizeof(char));
@@ -248,7 +249,10 @@ int main(int argc, char *argv[])
 					if (buffer[0] == 'X') {//scratch register 
 						for (int sj = 0; sj < device_num; sj++) {
 							if (devices[sj].IP.S_un.S_addr == address.sin_addr.S_un.S_addr) {
-								scratch[scratch_num].ID = buffer[1];
+							//	scratch[scratch_num].ID = buffer[1];
+								buffer++;
+								strncpy_s(scratch[scratch_num].ID, buffer, 2);
+								scratch[scratch_num].ID[2] = '\0';
 								scratch[scratch_num].the_s = i;
 								scratch_num++;
 								device_num--;
@@ -258,27 +262,33 @@ int main(int argc, char *argv[])
 						}
 					}
 					else if (buffer[0] == 'W') {//id from scratch command
+						
 						bool dev_exist = false;
-						char const *d_id;
+						char const *d_id; //==const char *
 						buffer++;
 						for (int j = 0; j < device_num; j++) {
 							//if (buffer[1] == devices[j].ID)//要將16轉成10再來比對
-							d_id = &(devices[j].ID);
-							if (_strnicmp(buffer, d_id, 1) == 0)//buffer
+							//d_id = &(devices[j].ID);
+							d_id = devices[j].ID;
+							
+							//if (_strnicmp(buffer, d_id, 1) == 0)//buffer
+							if (_strnicmp(buffer, d_id, 2) == 0)
 							{
 								dev_exist = true;
-								devices[j].action = buffer[1];
+								devices[j].action = buffer[2];
 								put[0] = devices[j].action;//將ACTION設給BUFFER
+								
 								s = client_socket[devices[j].the_s];
 								int sback = send(s, put, strlen(put), 0);
 								if (sback != strlen(put)) {
-									perror("send fail");
+									perror("\nsend fail");
 								}
 							}
 						}
 						if (dev_exist == false) {
-							printf("the device doesn't exist.");
+							printf("\nthe device doesn't exist.");
 						}
+						printf("\nbreak");
 						break;
 					}
 					else {
@@ -287,22 +297,34 @@ int main(int argc, char *argv[])
 							{
 								if (buffer[0] == 'S')//set ID
 								{
-									char const* str1;
+									/*char const* str1;
 									str1 = &(devices[j].ID);
 									if (strcmp(str1, "\0") == 0) {
-										devices[j].ID = buffer[1];
+										devices[j].ID = buffer[1];*/
+									
+									if (strcmp(devices[j].ID, "\0") == 0) {
+										buffer++;
+										strncpy_s(devices[j].ID, buffer,2);
+										devices[j].ID[2] = '\0';
 										printf("the ID:");
 										//*put = buffer[1];
-										printf("%c", buffer[1]);//1.2....65.66...
+										printf("%s\n", devices[j].ID);//1.2....65.66...
 									}
 									break;
 
 								}
-								else {//report the action of itself send to scratch
-									devices[j].action = buffer[1];
-									printf("ID: %c , action= %c", devices[j].ID, devices[j].action);
-									put[0] = devices[j].ID;//char *message
-									put[1] = devices[j].action;
+								else {//report the action of itself, send to scratch
+									devices[j].action = buffer[2];
+									printf("ID:%s  ", devices[j].ID);
+									printf("action:%c",devices[j].action);
+
+									//put[0] = devices[j].ID;//char *message
+									//put[1] = devices[j].action;
+									
+									strncpy_s(put,devices[j].ID,2);
+									put[2] = devices[j].action;
+									put[3] = '\0';
+									
 									for (int k = 0; k < scratch_num; k++) {
 										x = client_socket[scratch[k].the_s];//send to scratch
 										send(x, put, strlen(put), 0);
@@ -313,6 +335,7 @@ int main(int argc, char *argv[])
 
 						}// for device				
 					}
+					
 				}
 			}//if(FD_ISET)
 		}
