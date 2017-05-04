@@ -1,20 +1,15 @@
 #include <SoftwareSerial.h>
 SoftwareSerial wifitoserver(3, 2);
-//SoftwareSerial wifireset(53,52); //交由wifi模組自動判斷
 bool flag = true;
 String deviceID;
 int _ID[0];
 char device_ctr;
-int index_pin = 0;
 static int char_count = 0;
-char mssg[10];
-char *p_msg;
 char cat[10];
 
 unsigned long _msg;//=strtoul(mssg[0], NULL, 16);
 int cc = 0; //16
 int dd = 0;
-bool flag_wifi = true;
 typedef enum {
   input, servomotor, pwm, digital
 }
@@ -43,18 +38,17 @@ void setup()
 }
 static char buffer[5];
 //bool ff=true;
+unsigned long timerrr = millis();
 void loop()
 {
-
   static unsigned long timerCheckUpdate = millis();
-
   if (millis() - timerCheckUpdate >= 20)
   {
+
+    recvwifi();
     sendUpdateServomotors();
     sendSensorValues();
     timerCheckUpdate = millis();
-    recvwifi();
-    
   }
 
   readSerialPort();
@@ -65,30 +59,16 @@ void recvwifi() {
   if ((char_count = wifitoserver.available()) > 0) { //recv msg from server
     for (int i = 0; i < char_count; ++i) {
       cat[i] = wifitoserver.read(); //char mssg[]
-      //          p_msg=mssg[i];
-      ////          cat[i]=mssg[i];//failed cat[i]get 0 char *cat[]
-      //          Serial2.println(mssg);
     }
-
     char **cptr;
     char ccc[2];
     *cptr = cat + 1;
-
     strncpy(ccc, cat, 2);
     cc = strtoul(ccc, NULL, 10); //ID
-    //char *ptr[]={cat};
-    //char **cptr=ptr;
-    //cc=strtoul(cat,cptr, 16);//wrong
-   
     dd = strtoul((cat + 2), NULL, 10); //action
     for (int i = 1; i < sizeof(cat); i++) {
-      cat[i] = {0};
-      
+      cat[i] = {0}; //no buffer to save new msg, just send present cat
     }
-  }
-  else {
-    cc = 0;
-    dd = 0;
   }
 }
 void configurePins()
@@ -137,22 +117,9 @@ void sendSensorValues()
   sensorValues[0] = cc; //ID sarah
   sensorValues[1] = dd; //action sarah
 
-  //}
-  //  for (sensorIndex = 2; sensorIndex < 6; sensorIndex++) //for analog sensors, calculate the median of 5 sensor readings in order to avoid variability and power surges
-  //  {
-  //    for (byte p = 0; p < 5; p++)
-  //      readings[p] = analogRead(sensorIndex);
-  //    insertionSort(readings, 5); //sort readings
-  //    sensorValues[sensorIndex] = readings[2]; //select median reading
-  //  }
-
-  //send analog sensor values
   for (sensorIndex = 0; sensorIndex < 2; sensorIndex++)
     ScratchBoardSensorReport(sensorIndex, sensorValues[sensorIndex]);
 
-  //send digital sensor values
-  //  ScratchBoardSensorReport(6, digitalRead(2)?1023:0);
-  //  ScratchBoardSensorReport(7, digitalRead(3)?1023:0);
 }
 
 void insertionSort(unsigned int* array, unsigned int n)
@@ -175,6 +142,10 @@ void ScratchBoardSensorReport(byte sensor, int value) //PicoBoard protocol, 2 by
                 | ((sensor & B1111) << 3) //
                 | ((value >> 7) & B111));
   Serial.write( value & B1111111);
+  delay(25);
+  cc = 0;
+  dd = 0;
+
 }
 
 void readSerialPort()
@@ -185,7 +156,8 @@ void readSerialPort()
   static byte readingSM = 0;
 
   if (Serial.available())
-  {
+  { 
+    
     if (readingSM == 0)
     {
       actuatorHighByte = Serial.read();
@@ -218,7 +190,6 @@ void readSerialPort()
         device_ctr = '1'; //on
         if (flag)
         {
-          
           if (arduinoPins[6].state < 99) {
             //希望可以在scratch上顯示錯誤字串
             _ID[0] = arduinoPins[6].state;
@@ -232,7 +203,6 @@ void readSerialPort()
         device_ctr = '0'; //off
         if (flag)
         {
-
           if (arduinoPins[6].state < 99) {
             _ID[0] = arduinoPins[6].state;
             device_control (_ID, device_ctr);
@@ -247,6 +217,7 @@ void readSerialPort()
       }
       readingSM = 0;
     }
+
   }
   else checkScratchDisconnection();
 }
@@ -284,10 +255,6 @@ void pulse (byte pinNumber, unsigned int pulseWidth)
 }
 
 void checkScratchDisconnection()
-//the reset is necessary when using an wireless arduino board
-//(because we need to ensure that arduino isn't waiting
-//the actuators state from Scratch) or when scratch isn't sending information
-//(because is how serial port close is detected)
 {
   if (millis() - lastDataReceivedTime > 1000) reset(); //reset state if actuators reception timeout = one second
 }
@@ -300,17 +267,9 @@ void device_control (int _ID[], char turn)//Sarah 001
     deviceID += "0";
   }
   deviceID += _ID[0];
-  //  deviceID.toCharArray(msg, 10);
-  //  unsigned long _msglong = strtoul(msg, NULL, 10);
-  //  for (int i = 1; i < sizeof(msg); i++)
-  //  {
-  //    msg[i] = {0};
-  //  }
-  //  String(_msglong, DEC).toCharArray(msg, 10);
-  //  msg[2] = turn;
   deviceID += turn;
-  //  wifitoserver.print(msg);
   wifitoserver.print(deviceID);
+  
 }
 
 
