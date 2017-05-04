@@ -137,20 +137,17 @@ int main(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 			}
 
-			//怎麼知道是new還是RECONNECT?
-			//inform user of socket number - used in send and receive commands
+			
 			printf("New connection , socket fd is %d , ip is : %s , port : %d \n", new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
 			//inet_ntop: network to printable
 			//inet_ntoa:句號與數字格式的字串轉換為 struct in_addr
 			//這些函式無法處理 IPv6，所以建議不要使用！請使用 inet_ntop() 或 inet_pton() 來代替！
-			//send new connection greeting message
-			//send deviceID to device sarah 0404
+
 			/*if (send(new_socket, message, strlen(message), 0) != strlen(message))
 			{
 				perror("send failed");
 			}
 
-			puts("Welcome message sent successfully");*/
 
 			//add new socket to array of sockets
 			
@@ -187,9 +184,6 @@ int main(int argc, char *argv[])
 			}
 		}//if (FD_ISSET(master, &readfds))
 
-		//else its some IO operation on some other socket :)
-		//get details of the client
-		//getpeername(s, (struct sockaddr*)&address, (int*)&addrlen);
 
 		for (i = 0; i < max_clients; i++)
 		{
@@ -288,7 +282,6 @@ int main(int argc, char *argv[])
 						if (dev_exist == false) {
 							printf("\nthe device doesn't exist.");
 						}
-						printf("\nbreak");
 						break;
 					}
 					else {
