@@ -168,11 +168,13 @@ int main(int argc, char *argv[])
 						//if (strcmp(dev_ip, now_ip) == 0)//0412 ²¾¨ì155«e
 						if (devices[j].IP.S_un.S_addr == address.sin_addr.S_un.S_addr)
 						{
+							
 							printf("reconnected ID: %c\n", devices[j].ID);
 							int dcs = devices[j].the_s;
 							client_socket[dcs] = 0;// delete old socket
 							client_num--;
 							device_recon = true;
+							devices[j].the_s = i;//device connect to (new) socket
 							break;
 						}
 					}
@@ -187,16 +189,19 @@ int main(int argc, char *argv[])
 								client_socket[dcs] = 0;// delete old socket
 								client_num--;
 								scratch_recon = true;
+								scratch[k].the_s = i;//device connect to (new) socket
 								break;
 							}
 						}
 						if (!scratch_recon) {
 							devices[j].IP = address.sin_addr;//sarah 0404
+							devices[j].the_s = i;//device connect to (new) socket
 							device_num++;
 							printf("device count %d   ", device_num);
 						}
+						
 					}
-					devices[j].the_s = i;//device connect to (new) socket
+					
 					break;
 				}
 			}
@@ -329,7 +334,7 @@ int main(int argc, char *argv[])
 									put[1] = devices[j].action;
 									for (int k = 0; k < scratch_num; k++) {
 										x = client_socket[scratch[k].the_s];//send to scratches
-										send(x, put, strlen(put), 0);
+-										send(x, put, strlen(put), 0);
 									}
 								}
 								//}
