@@ -3,11 +3,10 @@
 SoftwareSerial wifitoserver(3, 2);
 byte handshaking_pin = 0;//A0
 byte msg_ID_pin = 2; //A2 msg
-byte msg_act_pin = 1; //A1
-byte act_back = 3; //A3
 
-
-int the_value,msg_ID;
+int count=0;
+int the_value;
+int msg_ID=0;
 byte scratch_ack = 10;
 
 bool flag = true;
@@ -36,40 +35,42 @@ void setup()
   wifitoserver.flush();
   delay(10);
   configurePins();
-  msg_ID=12;
 }
 
 void loop()
 {
   recvwifi();
-   ScratchBoardSensorReport(msg_ID_pin,msg_ID);
   delay(10);
-  readSerialPort();
 }
 void recvwifi() {
    if ((char_count = wifitoserver.available()) > 0) { //recv msg from server
+    count=0;
     for (int i = 0; i < char_count; ++i) {
     cat[i] = wifitoserver.read(); //char mssg[]
      if (i == 0) {
         msg_ID = strtoul(cat, NULL, 16); //ID
       }
     }
-  ScratchBoardSensorReport(msg_act_pin,1);
-  ScratchBoardSensorReport(msg_ID_pin,msg_ID);
     for (int i = 1; i < sizeof(cat); i++) { cat[i] = {0};}
+    delay(20);
   }
-  }
+  ScratchBoardSensorReport(msg_ID_pin,msg_ID);
+  count++;
+  wifitoserver.println(count);
+  if(count>1000){msg_ID=0;count=0;
+  lastDataReceivedTime = millis();}//in 10sec, the msg is the same from same client 
+   // after 10sec, set IID to 0, so the msg from the same client would be recog
+   }
+  
 void configurePins()
 {
-  for (int index = 7; index < 10; index++)
+  for (int index = 7; index < 14; index++)
   {
     arduinoPins[index].type = digital;
     arduinoPins[index].state = 0;
     pinMode(index, OUTPUT);
     digitalWrite(index, LOW); //reset pins
-    
   }
-   pinMode(10, INPUT_PULLUP);
 }
 
 void ScratchBoardSensorReport(byte sensor, int value) //PicoBoard protocol, 2 bytes per sensor
@@ -80,83 +81,6 @@ void ScratchBoardSensorReport(byte sensor, int value) //PicoBoard protocol, 2 by
   Serial.write( value & B1111111);
 }
 
-void readSerialPort()
-{
-  
-  ScratchBoardSensorReport(handshaking_pin, 0);
-  int pin, inByte, sensorHighByte, states;
-
-  if (Serial.available() > 1)
-  {
-    wifitoserver.println("read");
-    lastDataReceivedTime = millis();
-    inByte = Serial.read();
-    
-    if (inByte >= 128) // Are we receiving the word's header?
-    {
-      sensorHighByte = inByte;
-      pin = ((inByte >> 3) & 0x0F);
-      if (pin == scratch_ack) {
-        while (!Serial.available()); // Wait for the end of the word with data
-        inByte = Serial.read();
-        
-        if (inByte <= 127) // This prevents Linux ttyACM driver to fail
-        {
-          states = ((sensorHighByte & 0x07) << 7) | (inByte & 0x7F);
-            if (states == 1) {
-            the_value = 1;
-            digitalWrite(pin, states);
-            
-            ScratchBoardSensorReport(msg_act_pin,0);//scratch recved, so action set to 0
-            ScratchBoardSensorReport(act_back,1);
-             }
-        }
-      }
-      else {
-        if(pin==9){
-            while (!Serial.available()); // Wait for the end of the word with data
-            inByte = Serial.read();
-            if (inByte <= 127) // This prevents Linux ttyACM driver to fail
-            {
-              digitalWrite(pin, states);
-              states = ((sensorHighByte & 0x07) << 7) | (inByte & 0x7F);
-              if(states==255)
-              {
-                 if (flag == false)
-                  {
-                    deviceID = "";
-                    _ID[0] = 0;
-                  }
-                    flag = true;
-                }
-              else if(states==200)
-               {
-                   device_ctr = '1'; //on
-                    if (flag)
-                    {
-            
-                      _ID[0] = arduinoPins[6].state;
-                      device_control (_ID, device_ctr);
-                      flag = false;
-                    }
-                  }
-                else if(states==100)
-                {
-                  device_ctr = '0'; //on
-                    if (flag)
-                    {
-                      _ID[0] = arduinoPins[6].state;
-                      device_control (_ID, device_ctr);
-                      flag = false;
-                    }
-                  }
-            }
-        }
-      }
-    }
-  }
-  else checkScratchDisconnection();
-}
 void checkScratchDisconnection()
 {
   if (millis() - lastDataReceivedTime > 1000) reset(); //reset state if actuators reception timeout = one second
