@@ -3,6 +3,8 @@
 SoftwareSerial wifitoserver(3, 2);
 byte handshaking_pin = 0;//A0
 byte msg_ID_pin = 2; //A2 msg
+byte msg_act_pin = 1; //A1
+byte act_back = 3; //A3
 
 int count=0;
 int the_value;
@@ -56,7 +58,7 @@ void recvwifi() {
   }
   ScratchBoardSensorReport(msg_ID_pin,msg_ID);
   count++;
-  wifitoserver.println(count);
+ 
   if(count>1000){msg_ID=0;count=0;
   lastDataReceivedTime = millis();}//in 10sec, the msg is the same from same client 
    // after 10sec, set IID to 0, so the msg from the same client would be recog
