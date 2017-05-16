@@ -1,16 +1,16 @@
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 
-#define SSID "scream"
-#define PASSWD "s741852scream"
-#define TCP_IP "192.168.1.205"
+#define SSID "Connectify-ptw"
+#define PASSWD "screamlab"
+#define TCP_IP "192.168.180.1"
 #define TCP_PORT 8888
 
-static String deviceID="5";
+#define deviceID 1
 
 WiFiClient wifiClient;
 int wifi_connect=5;
-char _buffer[4]; //sarah0411
+char _buffer[3]; //sarah0411
 void setup()
 {
     
@@ -28,9 +28,9 @@ void setup()
 
     wifiClient.connect(TCP_IP, TCP_PORT);
      _buffer[0]='X';
-      //_buffer[1]=deviceID;
-      deviceID.toCharArray((_buffer+1), 3);
-      wifiClient.write(_buffer,3);
+     String(deviceID, HEX).toCharArray((_buffer+1), 2);
+//      _buffer[1]=deviceID;
+      wifiClient.write(_buffer,2);
      for(int i=1;i<sizeof(_buffer);i++){ _buffer[i]={0}; }
 }
 
@@ -49,10 +49,10 @@ void loop()
         buffer[i] = '\0';
 
 
-        wifiClient.write(buffer, char_count+1);
-        wifiClient.flush();
-        Serial.write(buffer, char_count+1);
-        Serial.flush();
+//        wifiClient.write(buffer, char_count+1);
+//        wifiClient.flush();
+//        Serial.write(buffer, char_count+1);
+//        Serial.flush();
         for(int i=1;i<sizeof(buffer);i++){ buffer[i]={0}; } //sarah
         if (strstr(buffer, "end")) {
             wifiClient.stop();
@@ -84,8 +84,8 @@ void checkconnect(){
               //return; 
             }else{
              _buffer[0]='X';
-              deviceID.toCharArray((_buffer+1),2);
-              wifiClient.write(_buffer,3);
+              String(deviceID, HEX).toCharArray((_buffer+1), 2);
+              wifiClient.write(_buffer,2);
               for(int i=1;i<sizeof(_buffer);i++){ _buffer[i]={0}; }
              Serial.println("sended id again");
             }
