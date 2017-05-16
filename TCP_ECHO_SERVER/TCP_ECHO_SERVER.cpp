@@ -50,9 +50,11 @@ int main(int argc, char *argv[])
 	char const *msgack = "ack";
 	char *buffer;
 	char put[1024] = "";
-	char now_ip[16] = "";
-	char dev_ip[16] = "";
 	buffer = (char*)malloc((MAXRECV + 1) * sizeof(char));
+
+	int input_ptr = 0;
+	int output_ptr = 0;
+	char output[1024] = "";
 
 
 	for (i = 0; i < 30; i++)
@@ -137,19 +139,8 @@ int main(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 			}
 
-			//«ç»òª¾¹D¬OnewÁÙ¬ORECONNECT?
 			//inform user of socket number - used in send and receive commands
 			printf("New connection , socket fd is %d , ip is : %s , port : %d \n", new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-			//inet_ntop: network to printable
-			//inet_ntoa:¥y¸¹»P¼Æ¦r®æ¦¡ªº¦r¦êÂà´«¬° struct in_addr
-			//³o¨Ç¨ç¦¡µLªk³B²z IPv6¡A©Ò¥H«ØÄ³¤£­n¨Ï¥Î¡I½Ð¨Ï¥Î inet_ntop() ©Î inet_pton() ¨Ó¥N´À¡I
-			//send new connection greeting message
-			//send deviceID to device sarah 0404
-			/*if (send(new_socket, message, strlen(message), 0) != strlen(message))
-			{
-			perror("send failed");
-			}
-			puts("Welcome message sent successfully");*/
 
 			//add new socket to array of sockets
 
@@ -165,10 +156,9 @@ int main(int argc, char *argv[])
 					bool scratch_recon = false;
 					int j = 0;
 					for (j; j < device_num; j++) {
-						//if (strcmp(dev_ip, now_ip) == 0)//0412 ²¾¨ì155«e
+
 						if (devices[j].IP.S_un.S_addr == address.sin_addr.S_un.S_addr)
 						{
-							
 							printf("reconnected ID: %c\n", devices[j].ID);
 							int dcs = devices[j].the_s;
 							client_socket[dcs] = 0;// delete old socket
@@ -178,7 +168,6 @@ int main(int argc, char *argv[])
 							break;
 						}
 					}
-
 					if (!device_recon) {
 						int k;
 						for (k = 0; k < scratch_num; k++) {
@@ -193,15 +182,13 @@ int main(int argc, char *argv[])
 								break;
 							}
 						}
-						if (!scratch_recon) {
+						if (!scratch_recon) { //the new client
 							devices[j].IP = address.sin_addr;//sarah 0404
 							devices[j].the_s = i;//device connect to (new) socket
 							device_num++;
 							printf("device count %d   ", device_num);
 						}
-						
 					}
-					
 					break;
 				}
 			}
@@ -308,7 +295,7 @@ int main(int argc, char *argv[])
 						}
 						break;
 					}
-					else {
+					else { // from client
 						for (int j = 0; j < device_num; j++) {
 							if (devices[j].IP.S_un.S_addr == address.sin_addr.S_un.S_addr) //msg from client
 							{
@@ -316,7 +303,7 @@ int main(int argc, char *argv[])
 								{
 									char const* str1;
 									str1 = &(devices[j].ID);
-									if (strcmp(str1, "\0") == 0) {
+									if (strcmp(str1, "\0") == 0) {//actually this condition is redundant because it must true
 										devices[j].ID = buffer[1];
 										printf("the ID:");
 										//*put = buffer[1];
@@ -330,12 +317,17 @@ int main(int argc, char *argv[])
 								else {//report the action of itself send to scratch
 									devices[j].action = buffer[1];
 									printf("ID: %c , action= %c", devices[j].ID, devices[j].action);
-									put[0] = devices[j].ID;//char *message
-									put[1] = devices[j].action;
-									for (int k = 0; k < scratch_num; k++) {
-										x = client_socket[scratch[k].the_s];//send to scratches
--										send(x, put, strlen(put), 0);
-									}
+									output[input_ptr] = devices[j].ID;
+									output[input_ptr + 1] = devices[j].action;
+									input_ptr += 2;
+
+									//client send msg to server
+									//for (int k = 0; k < output_ptr; k++) {
+									x = client_socket[scratch[0].the_s];//send to scratches
+									put[0] = output[output_ptr];//char *message
+									put[1] = output[output_ptr + 1];
+									send(x, put, strlen(put), 0);
+									//}
 								}
 								//}
 							}
@@ -345,7 +337,24 @@ int main(int argc, char *argv[])
 				}
 			}//if(FD_ISET)
 		}
-	}
+		if (output_ptr != input_ptr) {
+			while (output_ptr < input_ptr) {
+				char const* the_id;
+				the_id = &(scratch[0].ID);
+				if (strcmp(the_id, "") == 1) {
+					x = client_socket[scratch[0].the_s];//send to scratches
+					put[0] = output[output_ptr];//char *message
+					put[1] = output[output_ptr + 1];
+					output_ptr += 2;
+					send(x, put, strlen(put), 0);
+				}
+				else {
+					break;
+				}
+			}
+		}
+
+	}// while(1)
 
 	closesocket(s);
 	WSACleanup();
