@@ -89,6 +89,11 @@ void loop()
 
   if (millis() - timerCheckUpdate >= 10000)
   {
+     while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    WiFi.begin(SSID, PASSWD);
+    Serial.println("Retrying...connect to AP");
+  }
+  Serial.println("Connected to AP");
     if (!wifiClient.connected()) {
       // Cannot join to the TCP server, stop.
       if (!wifiClient.connect(TCP_IP, TCP_PORT)) {
