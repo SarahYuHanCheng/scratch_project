@@ -13,9 +13,12 @@ WiFiClient wifiClient;
 #define TCP_PORT 8888
 
 #define deviceID 12
-int in_msg =D0;
-int wifi_connect=D5;
-int out_msg =D2;
+
+int button_pressed = D4;
+int in_msg = D0;
+int wifi_connect = D5;
+
+int out_msg = D2;
 char _buffer[3];
 
 void setup()
@@ -53,7 +56,6 @@ void setup()
 
 static char buffer[32];
 static unsigned long timerCheckUpdate = millis();
-static unsigned long timer ;
 void loop()
 {
   int charAvail;
@@ -72,6 +74,7 @@ void loop()
   }
   // gets() would return the ID of the sender.
   if ((charAvail = wifiClient.available()) > 0) {
+    timerCheckUpdate = millis();
     wifiClient.read((unsigned char *)buffer, 32);
     if (buffer[0] == '1') {
       digitalWrite(in_msg, HIGH); //BUILTIN_LED off
@@ -89,23 +92,24 @@ void loop()
 
   if (millis() - timerCheckUpdate >= 10000)
   {
-     while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    WiFi.begin(SSID, PASSWD);
-    Serial.println("Retrying...connect to AP");
-  }
-  Serial.println("Connected to AP");
+
     if (!wifiClient.connected()) {
       // Cannot join to the TCP server, stop.
       if (!wifiClient.connect(TCP_IP, TCP_PORT)) {
         Serial.println("connection failed");
-        int i = 0;
-        while (i < 2) {
-          digitalWrite(wifi_connect, HIGH);
-          delay(800);
-          digitalWrite(wifi_connect, LOW);
-          delay(200);
-          i++;
+        while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+          WiFi.begin(SSID, PASSWD);
+          Serial.println("Retrying...connect to AP");
         }
+        Serial.println("Connected to AP");
+        //        int i = 0;
+        //        while (i < 2) {
+        //          digitalWrite(wifi_connect, HIGH);
+        //          delay(800);
+        //          digitalWrite(wifi_connect, LOW);
+        //          delay(200);
+        //          i++;
+        //        }
         //return;
       } else {
         _buffer[0] = 'S';
@@ -117,7 +121,9 @@ void loop()
         Serial.println("sended id again");
       }
     }
-    timerCheckUpdate = millis();
+    else {
+      timerCheckUpdate = millis();
+    }
   }
-//  delay(10);
+  //  delay(10);
 }
