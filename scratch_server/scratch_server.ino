@@ -6,9 +6,10 @@ byte msg_ID_pin = 2; //A2 msg
 byte msg_act_pin = 1; //A1
 byte act_back = 3; //A3
 
-int count=0;
+int count = 0;
 int the_value;
-int msg_ID=0;
+int msg_ID = 0;
+int old_msg_ID = 1;
 byte scratch_ack = 10;
 
 bool flag = true;
@@ -19,7 +20,7 @@ int _ID[0];
 char device_ctr;
 
 typedef enum {  digital//  input, servomotor, pwm,
- }pinType;
+             } pinType;
 
 typedef struct pin {
   pinType type;       //Type of pin
@@ -45,25 +46,39 @@ void loop()
   delay(10);
 }
 void recvwifi() {
-   if ((char_count = wifitoserver.available()) > 0) { //recv msg from server
-    count=0;
+  if ((char_count = wifitoserver.available()) > 0) { //recv msg from server
+
+    old_msg_ID = msg_ID;
+    delay(10);
     for (int i = 0; i < char_count; ++i) {
-    cat[i] = wifitoserver.read(); //char mssg[]
-     if (i == 0) {
+      cat[i] = wifitoserver.read(); //char mssg[]
+      if (i == 0) {
         msg_ID = strtoul(cat, NULL, 16); //ID
+
+
+      }
+      delay(30);
+      if (msg_ID != old_msg_ID) {
+        count = 0;
       }
     }
-    for (int i = 1; i < sizeof(cat); i++) { cat[i] = {0};}
-    delay(20);
+    for (int i = 1; i < sizeof(cat); i++) {
+      cat[i] = {0};
+    }
+
   }
-  ScratchBoardSensorReport(msg_ID_pin,msg_ID);
+  delay(20);//for the first time after reset ID to 0
+  ScratchBoardSensorReport(msg_ID_pin, msg_ID);
   count++;
- 
-  if(count>1000){msg_ID=0;count=0;
-  lastDataReceivedTime = millis();}//in 10sec, the msg is the same from same client 
-   // after 10sec, set IID to 0, so the msg from the same client would be recog
-   }
-  
+
+  if (count > 280) {
+    msg_ID = 0; count = 0;
+    lastDataReceivedTime = millis();
+  }//in 10sec, the msg is the same from same client
+  // after 10sec, set IID to 0, so the msg from the same client would be recog
+  delay(10);
+}
+
 void configurePins()
 {
   for (int index = 7; index < 14; index++)
