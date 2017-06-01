@@ -33,12 +33,21 @@ scratch_project/tcp_client/tcp_client.ino
 scratch_project/WiFiSerial.ino
 
 
+
+
 步驟:
+
 1.打開熱點
+
 2.裝置上電(wifi module),熱點軟體會顯示目前連接上的ip
+
 3.打開server.exe,看裝置是否都有連到server
+
 4.確認連上後,Arduino uno接電腦,開S4A
+
 5.點S4A的綠旗,按下按鈕後會正常運作
+
+
 
 目前待解問題:
 1. 採4號裝置,scratch會收到1號
