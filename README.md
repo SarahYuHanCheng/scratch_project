@@ -3,18 +3,23 @@
 伺服器編輯器
 https://www.visualstudio.com/zh-hant/downloads/?rr=https%3A%2F%2Fwww.google.com.tw%2F
 
+
 Arduino編輯器
 https://www.arduino.cc/en/Main/Donate
+
 燒錄wifi模組D1 mini需要的lib:
 
 https://drive.google.com/file/d/0B3rnGrzvGiDkcUFLVFZub25rNVk/view?usp=sharing
 (解壓縮後放進Arduino目錄下)
 
+
 S4A軟體
 http://s4a.cat/
 
 
+
 程式碼更新請至: 
+
 Server程式碼
 scratch_project/TCP_ECHO_SERVER/TCP_ECHO_SERVER.cpp
 
