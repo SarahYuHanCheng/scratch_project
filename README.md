@@ -13,15 +13,20 @@ https://drive.google.com/file/d/0B3rnGrzvGiDkcUFLVFZub25rNVk/view?usp=sharing
 S4A軟體
 http://s4a.cat/
 
+
 程式碼更新請至: 
 Server程式碼
 scratch_project/TCP_ECHO_SERVER/TCP_ECHO_SERVER.cpp
+
 S4A韌體，用Arduino編輯器燒錄到板子
 scratch_project/scratch_server/scratch_server.ino
+
 小朋友的wifi程式碼
 scratch_project/tcp_client/tcp_client.ino
+
 連接Arduino板子的wifi程式碼
 scratch_project/WiFiSerial.ino
+
 
 步驟:
 1.打開熱點
