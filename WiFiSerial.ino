@@ -3,7 +3,7 @@
 
 #define SSID "Connectify-ptw"
 #define PASSWD "screamlab"
-#define TCP_IP "192.168.180.1"
+#define TCP_IP "192.168.179.1"
 #define TCP_PORT 8888
 
 #define deviceID 1
@@ -23,6 +23,7 @@ void setup()
   while (WiFi.waitForConnectResult() != WL_CONNECTED) {
     WiFi.begin(SSID, PASSWD);
     Serial.println("Retrying...");
+    delay(100);
   }
   Serial.println("Connected to AP");
 
