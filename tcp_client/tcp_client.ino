@@ -9,10 +9,10 @@ WiFiClient wifiClient;
 // You have to modify the following parameters.
 #define SSID "Connectify-ptw"
 #define PASSWD "screamlab"
-#define TCP_IP "192.168.180.1"
+#define TCP_IP "192.168.179.1"
 #define TCP_PORT 8888
 
-#define deviceID 12
+#define deviceID 10
 
 int button_pressed = D4;
 int in_msg = D0;
@@ -100,16 +100,17 @@ void loop()
         while (WiFi.waitForConnectResult() != WL_CONNECTED) {
           WiFi.begin(SSID, PASSWD);
           Serial.println("Retrying...connect to AP");
+//          delay(1000);
         }
         Serial.println("Connected to AP");
-        //        int i = 0;
-        //        while (i < 2) {
-        //          digitalWrite(wifi_connect, HIGH);
-        //          delay(800);
-        //          digitalWrite(wifi_connect, LOW);
-        //          delay(200);
-        //          i++;
-        //        }
+                int i = 0;
+                while (i < 2) {
+                  digitalWrite(wifi_connect, HIGH);
+                  delay(500);
+                  digitalWrite(wifi_connect, LOW);
+                  delay(200);
+                  i++;
+                }
         //return;
       } else {
         _buffer[0] = 'S';
